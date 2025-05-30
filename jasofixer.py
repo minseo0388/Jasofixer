@@ -137,21 +137,26 @@ def start_normalization():
 # GUI 구성
 root = tk.Tk()
 root.title("한글 자소 정규화 도구")
-root.geometry("620x480")
+root.geometry("620x500")
 root.resizable(False, False)
 
-# 상단 옵션 프레임
-option_frame = tk.Frame(root)
-option_frame.pack(pady=10)
+# 프레임: 실행 버튼과 체크박스 수평 정렬
+action_frame = tk.Frame(root)
+action_frame.pack(pady=15)
 
+# 실행 버튼 (크게)
+start_btn = tk.Button(action_frame, text="폴더 선택 및 정규화 시작", command=start_normalization, width=30, height=2)
+start_btn.pack(side=tk.LEFT, padx=10)
+
+# 체크박스들
 backup_var = tk.BooleanVar(value=True)
 log_save_var = tk.BooleanVar(value=True)
 
-tk.Checkbutton(option_frame, text="정규화 전에 백업", variable=backup_var).pack(side=tk.LEFT, padx=10)
-tk.Checkbutton(option_frame, text="변경 로그 파일 저장", variable=log_save_var).pack(side=tk.LEFT, padx=10)
+check_frame = tk.Frame(action_frame)
+check_frame.pack(side=tk.LEFT, padx=10)
 
-# 실행 버튼
-tk.Button(root, text="폴더 선택 및 정규화 시작", command=start_normalization).pack(pady=10)
+tk.Checkbutton(check_frame, text="정규화 전에 백업", variable=backup_var).pack(anchor='w')
+tk.Checkbutton(check_frame, text="변경 로그 파일 저장", variable=log_save_var).pack(anchor='w')
 
 # 진행 바
 progress_bar = ttk.Progressbar(root, length=550)
