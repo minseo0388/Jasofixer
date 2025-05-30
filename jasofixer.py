@@ -1,7 +1,9 @@
 import os
+import shutil
 import unicodedata
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+from datetime import datetime
 
 def normalize_path(path):
     return unicodedata.normalize('NFC', path)
@@ -16,6 +18,7 @@ def normalize_filenames_recursively(root_dir, progress_callback=None, log_callba
     total = count_total_items(root_dir)
     current = 0
     changed = 0
+    changed_logs = []
 
     for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
         for filename in filenames:
@@ -27,12 +30,16 @@ def normalize_filenames_recursively(root_dir, progress_callback=None, log_callba
                 try:
                     os.rename(original_path, normalized_path)
                     changed += 1
+                    rel_path = os.path.relpath(original_path, root_dir)
+                    log_entry = f"[FILE] {rel_path} → {normalized_filename}"
+                    changed_logs.append(log_entry)
                     if log_callback:
-                        rel_path = os.path.relpath(original_path, root_dir)
-                        log_callback(f"[FILE] {rel_path} → {normalized_filename}")
+                        log_callback(log_entry)
                 except Exception as e:
+                    err_msg = f"[FILE] Failed: {filename} - {e}"
+                    changed_logs.append(err_msg)
                     if log_callback:
-                        log_callback(f"[FILE] Failed: {filename} - {e}")
+                        log_callback(err_msg)
 
             current += 1
             if progress_callback:
@@ -47,16 +54,40 @@ def normalize_filenames_recursively(root_dir, progress_callback=None, log_callba
                 try:
                     os.rename(original_dir_path, normalized_dir_path)
                     changed += 1
+                    rel_path = os.path.relpath(original_dir_path, root_dir)
+                    log_entry = f"[DIR ] {rel_path} → {normalized_dirname}"
+                    changed_logs.append(log_entry)
                     if log_callback:
-                        rel_path = os.path.relpath(original_dir_path, root_dir)
-                        log_callback(f"[DIR ] {rel_path} → {normalized_dirname}")
+                        log_callback(log_entry)
                 except Exception as e:
+                    err_msg = f"[DIR ] Failed: {dirname} - {e}"
+                    changed_logs.append(err_msg)
                     if log_callback:
-                        log_callback(f"[DIR ] Failed: {dirname} - {e}")
+                        log_callback(err_msg)
 
             current += 1
             if progress_callback:
                 progress_callback(current, total, changed)
+
+    return changed_logs
+
+def save_log_to_file(logs):
+    now = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"변경_로그_{now}.txt"
+    with open(filename, "w", encoding="utf-8") as f:
+        for line in logs:
+            f.write(line + "\n")
+    return filename
+
+def backup_folder(src):
+    now = datetime.now().strftime("%Y%m%d_%H%M%S")
+    dst = f"{src}_backup_{now}"
+    try:
+        shutil.copytree(src, dst)
+        return dst
+    except Exception as e:
+        messagebox.showerror("백업 실패", f"백업 중 오류 발생:\n{e}")
+        return None
 
 def start_normalization():
     folder_selected = filedialog.askdirectory(title="정규화할 폴더를 선택하세요")
@@ -65,9 +96,16 @@ def start_normalization():
         messagebox.showwarning("취소됨", "폴더가 선택되지 않았습니다.")
         return
 
+    if backup_var.get():
+        backup_path = backup_folder(folder_selected)
+        if backup_path:
+            messagebox.showinfo("백업 완료", f"백업이 완료되었습니다:\n{backup_path}")
+        else:
+            return
+
     progress_bar["value"] = 0
     status_label.config(text="정규화 중...")
-    log_text.delete(1.0, tk.END)  # 로그 초기화
+    log_text.delete(1.0, tk.END)
 
     def update_progress(current, total, changed):
         percent = int((current / total) * 100)
@@ -79,21 +117,43 @@ def start_normalization():
         log_text.insert(tk.END, message + "\n")
         log_text.see(tk.END)
 
-    normalize_filenames_recursively(folder_selected, progress_callback=update_progress, log_callback=log_change)
+    changed_logs = normalize_filenames_recursively(
+        folder_selected,
+        progress_callback=update_progress,
+        log_callback=log_change
+    )
 
     progress_bar["value"] = 100
     status_label.config(text="정규화 완료!")
-    messagebox.showinfo("완료", "자소 정규화가 완료되었습니다.")
 
-# GUI
+    if changed_logs and log_save_var.get():
+        log_file = save_log_to_file(changed_logs)
+        messagebox.showinfo("완료", f"정규화 완료!\n로그 저장됨:\n{log_file}")
+    elif changed_logs:
+        messagebox.showinfo("완료", "정규화 완료!\n로그는 저장되지 않았습니다.")
+    else:
+        messagebox.showinfo("완료", "정규화 완료!\n변경된 항목은 없습니다.")
+
+# GUI 구성
 root = tk.Tk()
 root.title("한글 자소 정규화 도구")
-root.geometry("600x450")
+root.geometry("620x480")
 root.resizable(False, False)
 
-select_button = tk.Button(root, text="폴더 선택 및 정규화 시작", command=start_normalization)
-select_button.pack(pady=10)
+# 상단 옵션 프레임
+option_frame = tk.Frame(root)
+option_frame.pack(pady=10)
 
+backup_var = tk.BooleanVar(value=True)
+log_save_var = tk.BooleanVar(value=True)
+
+tk.Checkbutton(option_frame, text="정규화 전에 백업", variable=backup_var).pack(side=tk.LEFT, padx=10)
+tk.Checkbutton(option_frame, text="변경 로그 파일 저장", variable=log_save_var).pack(side=tk.LEFT, padx=10)
+
+# 실행 버튼
+tk.Button(root, text="폴더 선택 및 정규화 시작", command=start_normalization).pack(pady=10)
+
+# 진행 바
 progress_bar = ttk.Progressbar(root, length=550)
 progress_bar.pack(pady=5)
 
@@ -103,6 +163,7 @@ progress_label.pack()
 status_label = tk.Label(root, text="폴더를 선택하세요")
 status_label.pack(pady=5)
 
+# 로그 창
 log_frame = tk.Frame(root)
 log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
