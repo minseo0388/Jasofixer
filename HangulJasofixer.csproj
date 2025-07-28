@@ -1,10 +1,35 @@
-<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>HangulJasofixer</RootNamespace>
+    
+    <!-- Application Information -->
+    <AssemblyTitle>Hangul Jasofixer</AssemblyTitle>
+    <AssemblyDescription>한글 파일명 자소 정규화 도구</AssemblyDescription>
+    <AssemblyCompany>Choi Minseo</AssemblyCompany>
+    <AssemblyProduct>Hangul Jasofixer</AssemblyProduct>
+    <AssemblyCopyright>Copyright © 2025 Choi Minseo</AssemblyCopyright>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
+    
+    <!-- Build Configuration -->
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <Optimize>false</Optimize>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
 
 </Project>

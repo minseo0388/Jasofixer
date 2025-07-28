@@ -1,1 +1,4 @@
 Jasofixer.sln
+/bin
+/obj
+*.exe
