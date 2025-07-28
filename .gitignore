@@ -1,4 +1,5 @@
 Jasofixer.sln
 /bin
 /obj
+/.idea
 *.exe
